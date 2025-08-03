@@ -17,6 +17,6 @@ import random
 #     image.save(os.path.join("flags",filename))
 
 flags_folder = "flags"
-flag_names = [flag.replace("_"," ").removesuffix(".png") for flag in os.listdir(flags_folder) if flag.lower().endswith(('.png'))]
+countries = [flag.replace("_"," ").removesuffix(".png") for flag in os.listdir(flags_folder) if flag.lower().endswith(('.png'))]
 
-print(random.choice(flag_names))
+print(random.choice(countries))
