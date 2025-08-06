@@ -4,6 +4,7 @@ import {MoveDown,MoveDownLeft,MoveDownRight,MoveLeft,MoveRight,MoveUp,MoveUpLeft
 
 function Home(){
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
+    const inputRef = useRef<HTMLInputElement | null>(null);
     const [error,setError] = useState<string|null>(null)
     const [guess,setGuess] = useState("")
     const [countries,setCountries] = useState<string[]|null>(null)
@@ -173,7 +174,7 @@ function Home(){
                 </div>
                 }
                 <div className={`w-[70%] mx-auto flex border text-2xl ${dropdown?"mt-10":"my-10"}`}>
-                    <input type="text" className="border w-full px-2" value={guess} onChange={(e)=>{
+                    <input type="text" className="border w-full px-2" ref={inputRef} value={guess} onChange={(e)=>{
                         setGuess(e.target.value)
                         setStop(false)
                         }}
@@ -194,6 +195,7 @@ function Home(){
                             <li key={index} className="hover:bg-gray-800 cursor-pointer" onClick={()=>{
                                 setGuess(country)
                                 setStop(true)
+                                setTimeout(()=>inputRef.current?.focus(),0)
                                 }}
                                 >
                                 {country}

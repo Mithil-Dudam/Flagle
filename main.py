@@ -7,7 +7,7 @@ import random
 import uuid
 import re
 
-from fastapi import FastAPI, Form, status, HTTPException
+from fastapi import FastAPI, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -31,41 +31,52 @@ from math import radians, sin, cos, sqrt, atan2, degrees
 df2 = pd.read_csv("coordinates.csv")
 
 flags_folder = "flags"
-countries = {flag.replace("_"," ").removesuffix(".png"):flag for flag in os.listdir(flags_folder)}
+countries = {
+    flag.replace("_", " ").removesuffix(".png"): flag
+    for flag in os.listdir(flags_folder)
+}
 country_names = list(countries.keys())
 country = ""
 chunks = []
 chunks_duplicate = []
-temp_chunks = ["","","","","",""]
+temp_chunks = ["", "", "", "", "", ""]
 flag = ""
 guesses = []
 lives = 6
 
 app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.mount("/flags", StaticFiles(directory="flags"), name="flags")
 app.mount("/temp_chunks", StaticFiles(directory="temp_chunks"), name="temp_chunks")
 
-@app.get("/random-country",status_code=status.HTTP_200_OK)
+
+@app.get("/random-country", status_code=status.HTTP_200_OK)
 async def random_country():
-    global country, chunks, flag, temp_chunks, chunks_duplicate, guesses,lives
+    global country, chunks, flag, temp_chunks, chunks_duplicate, guesses, lives
     for filename in os.listdir("temp_chunks"):
-        filepath = os.path.join("temp_chunks",filename)
+        filepath = os.path.join("temp_chunks", filename)
         os.remove(filepath)
     chunks = []
-    temp_chunks = ["","","","","",""]
+    temp_chunks = ["", "", "", "", "", ""]
     chunks_duplicate = []
     guesses = []
-    lives=6
+    lives = 6
     country = random.choice(country_names)
-    flag = "http://localhost:8000/flags/"+countries[country]
-    filename = os.path.join("flags",countries[country])
+    flag = "http://localhost:8000/flags/" + countries[country]
+    filename = os.path.join("flags", countries[country])
     chunks = split_image_to_chunks(filename)
     chunks_duplicate = chunks.copy()
 
-def split_image_to_chunks(img_path:str):
-    os.makedirs("temp_chunks",exist_ok=True)
+
+def split_image_to_chunks(img_path: str):
+    os.makedirs("temp_chunks", exist_ok=True)
     img = Image.open(img_path)
     width, height = img.size
     chunk_width = width // 3
@@ -79,24 +90,28 @@ def split_image_to_chunks(img_path:str):
             right = left + chunk_width
             lower = upper + chunk_height
 
-            box = (left,upper,right,lower)
+            box = (left, upper, right, lower)
             cropped_img = img.crop(box)
 
             chunk_filename = f"{uuid.uuid4().hex}.png"
-            chunk_path = os.path.join("temp_chunks",chunk_filename)
+            chunk_path = os.path.join("temp_chunks", chunk_filename)
             cropped_img.save(chunk_path)
-            chunks.append("http://localhost:8000/temp_chunks/"+chunk_filename)
+            chunks.append("http://localhost:8000/temp_chunks/" + chunk_filename)
     return chunks
 
-@app.post("/countries-list",status_code=status.HTTP_200_OK)
-async def countries_list(guess:str):
-    countries_list = [country for country in country_names if guess.lower() in country.lower()]
+
+@app.post("/countries-list", status_code=status.HTTP_200_OK)
+async def countries_list(guess: str):
+    countries_list = [
+        country for country in country_names if guess.lower() in country.lower()
+    ]
     if countries_list:
-        return {"countries_list":countries_list}
-    return {"countries_list":[]}
+        return {"countries_list": countries_list}
+    return {"countries_list": []}
+
 
 def extract_json(text: str):
-    match = re.search(r'{.*}', text, re.DOTALL)
+    match = re.search(r"{.*}", text, re.DOTALL)
     if match:
         try:
             return json.loads(match.group())
@@ -104,75 +119,115 @@ def extract_json(text: str):
             raise ValueError("Found JSON block but couldn't parse it.")
     else:
         raise ValueError("No JSON block found in LLM response.")
-    
+
+
 def haversine_distance(lat1, lon1, lat2, lon2):
     R = 6371  # Earth's radius in kilometers
 
     dlat = radians(lat2 - lat1)
     dlon = radians(lon2 - lon1)
-    
-    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
+
+    a = (
+        sin(dlat / 2) ** 2
+        + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    )
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    
+
     distance = R * c
     return distance
 
+
 def calculate_bearing(lat1, lon1, lat2, lon2):
     lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-    
+
     dlon = lon2 - lon1
     x = sin(dlon) * cos(lat2)
-    y = cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(dlon)
-    
+    y = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dlon)
+
     initial_bearing = atan2(x, y)
     bearing_degrees = (degrees(initial_bearing) + 360) % 360
-    
+
     return bearing_degrees
+
 
 def bearing_to_direction(bearing):
     directions = [
-        "north", "northeast", "east", "southeast",
-        "south", "southwest", "west", "northwest"
+        "north",
+        "northeast",
+        "east",
+        "southeast",
+        "south",
+        "southwest",
+        "west",
+        "northwest",
     ]
     idx = round(bearing / 45) % 8
     return directions[idx]
 
 
-
-@app.post("/guess",status_code=status.HTTP_200_OK)
-async def guess(guess:str):
-    global chunks,temp_chunks,guesses,lives
+@app.post("/guess", status_code=status.HTTP_200_OK)
+async def guess(guess: str):
+    global chunks, temp_chunks, guesses, lives
     if country.lower() == guess.lower().strip():
-        return {"result":"correct","chunks":chunks_duplicate,"guesses":guesses, "country":country}
+        return {
+            "result": "correct",
+            "chunks": chunks_duplicate,
+            "guesses": guesses,
+            "country": country,
+        }
     if not any(guess.lower().strip() == c.lower() for c in country_names):
-        raise HTTPException(status_code=404,detail="Not a country")
+        raise HTTPException(status_code=404, detail="Not a country")
     else:
         chunk = random.choice(chunks)
         chunk_index = chunks_duplicate.index(chunk)
         chunks.remove(chunk)
         temp_chunks[chunk_index] = chunk
 
-        lat1,lon1 = df2.loc[df2["country"].str.lower()==guess.lower(),"latitude"].values[0],df2.loc[df2["country"].str.lower()==guess.lower(),"longitude"].values[0]
-        lat2,lon2 = df2.loc[df2["country"].str.lower()==country.lower(),"latitude"].values[0],df2.loc[df2["country"].str.lower()==country.lower(),"longitude"].values[0]
+        lat1, lon1 = (
+            df2.loc[df2["country"].str.lower() == guess.lower(), "latitude"].values[0],
+            df2.loc[df2["country"].str.lower() == guess.lower(), "longitude"].values[0],
+        )
+        lat2, lon2 = (
+            df2.loc[df2["country"].str.lower() == country.lower(), "latitude"].values[
+                0
+            ],
+            df2.loc[df2["country"].str.lower() == country.lower(), "longitude"].values[
+                0
+            ],
+        )
 
-        distance = haversine_distance(lat1,lon1,lat2,lon2)
-        bearing = calculate_bearing(lat1,lon1,lat2,lon2)
+        distance = haversine_distance(lat1, lon1, lat2, lon2)
+        bearing = calculate_bearing(lat1, lon1, lat2, lon2)
         direction = bearing_to_direction(bearing)
 
-        guesses.append({"guess":guess,"distance":distance,"direction":direction})
-        lives-=1
-        if lives!=0:
-            return {"result":"wrong","chunks":temp_chunks,"guesses":guesses,"lives":lives}
+        guesses.append({"guess": guess, "distance": distance, "direction": direction})
+        lives -= 1
+        if lives != 0:
+            return {
+                "result": "wrong",
+                "chunks": temp_chunks,
+                "guesses": guesses,
+                "lives": lives,
+            }
         else:
-            return {"result":"wrong","chunks":temp_chunks,"guesses":guesses,"lives":lives,"country":country}
-        
+            return {
+                "result": "wrong",
+                "chunks": temp_chunks,
+                "guesses": guesses,
+                "lives": lives,
+                "country": country,
+            }
+
+
 llm = ChatOllama(model="llama3.2")
 
-class Query(BaseModel):
-    query:str
 
-@app.post("/ai",status_code=status.HTTP_200_OK)
-async def ai(query:Query):
+class Query(BaseModel):
+    query: str
+
+
+@app.post("/ai", status_code=status.HTTP_200_OK)
+async def ai(query: Query):
     prompt = f"""
     You are an AI assistant helping a user guess a secret country. Your task is to provide subtle hints based on the user's query without ever revealing or confirming the country name. 
 
@@ -199,4 +254,4 @@ async def ai(query:Query):
     """
 
     result = llm.invoke(prompt)
-    return{"result":result.content}
+    return {"result": result.content}
