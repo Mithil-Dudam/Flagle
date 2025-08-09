@@ -137,7 +137,7 @@ function Home(){
                 <h1 className="text-center pt-10 text-8xl font-bold"><span className="border-b-2">Flagle</span></h1>
                 {result?.result==="correct"||result?.lives===0? 
                 (<div className="mt-20">
-                    <p className="text-center text-xl font-bold"><span className="border p-2 bg-green-500">{result.country.toUpperCase()}</span></p>
+                    <p className="text-center text-2xl font-bold"><span className="border p-2 bg-green-600">{result.country.toUpperCase()}</span></p>
                 </div>):""
                 }
                 <div className="my-20 border w-[640px] h-[427px] mx-auto grid grid-rows-2 grid-cols-3">
@@ -165,12 +165,12 @@ function Home(){
                 </div> }
                 {result?.result==="correct"&&
                 <div>
-                    <p className="text-center text-xl font-semibold"><span className="border px-5 bg-green-500">You Guessed the Flag !</span></p>
+                    <p className="text-center text-2xl font-semibold"><span className="border px-5 py-1 bg-blue-800">You Guessed the Flag 🎉!</span></p>
                 </div>
                 }
                 {result&&result.lives===0&&result.result!=="correct"&&
                 <div>
-                    <p className="text-center text-xl font-semibold"><span className="border px-5 bg-red-500">Out of Guesses!</span></p>
+                    <p className="text-center text-2xl font-semibold"><span className="border px-5 py-1 bg-red-500">Out of Guesses!</span></p>
                 </div>
                 }
                 <div className={`w-[70%] mx-auto flex border text-2xl ${dropdown?"mt-10":"my-10"}`}>
@@ -186,13 +186,13 @@ function Home(){
                         disabled={result?.result==="correct"||result?.lives===0}
                         placeholder="Enter a country or type'/AI' for a hint"
                         />
-                    <button className="border py-1 px-3 font-semibold" onClick={Guess} disabled={result?.result==="correct"||result?.lives===0}>Guess</button>
+                    <button className={`border py-1 px-3 font-semibold ${result?.result==="correct"||result?.lives===0?"":"cursor-pointer"}`} onClick={Guess} disabled={result?.result==="correct"||result?.lives===0}>Guess</button>
                 </div>
                 {dropdown && countries&&
-                <div className="border w-[70%] mx-auto">
+                <div className="border w-[70%] mx-auto max-h-[30%] overflow-auto">
                     <ul>
                         {countries?.map((country,index)=>(
-                            <li key={index} className="hover:bg-gray-800 cursor-pointer" onClick={()=>{
+                            <li key={index} className="hover:bg-gray-800 cursor-pointer pl-2" onClick={()=>{
                                 setGuess(country)
                                 setStop(true)
                                 setTimeout(()=>inputRef.current?.focus(),0)
@@ -237,7 +237,7 @@ function Home(){
                 </div>
                 {result?.result==="correct"||result?.lives===0?
                 (<div className="my-15 text-center">
-                    <button className="border py-2 px-3 text-3xl font-semibold cursor-pointer bg-amber-500" onClick={NewGame}>Play Again</button>
+                    <button className=" py-2 px-3 text-3xl font-semibold cursor-pointer bg-green-800 text-white" onClick={NewGame}>One More ?</button>
                 </div>):""
                 }
             </div>
